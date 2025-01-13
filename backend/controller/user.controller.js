@@ -17,7 +17,7 @@ export const getUserProfile = async (req,res) => {
             return res.status(500).json({message:"Internal Server Error"});
     }
 };
-// export const getUserProfile = () => {};
+
 export const followAndUnFollowUser = async (req,res) => {
     try{
         const {id} = req.params;

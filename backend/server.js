@@ -3,6 +3,7 @@ import {v2 as cloudinary} from "cloudinary";
 import dotenv from "dotenv";
 import authRouter from "./routes/auth.routes.js";
 import userRouter from "./routes/user.routes.js";
+import postRouter from "./routes/post.routes.js";
 import connectMongoDB from "./db/connectMongoDB.js";
 import cookieParser from "cookie-parser";
 const app = express();
@@ -24,7 +25,8 @@ app.get('/',(req,res)=>{
 })
 
 app.use("/api/auth",authRouter);
-app.use("/api/users",userRouter)
+app.use("/api/users",userRouter);
+app.use("/api/posts",postRouter);
 app.listen(PORT, (err) => {
     if(err){
         console.log("Error in Server", err.message);
