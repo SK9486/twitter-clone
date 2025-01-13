@@ -1,6 +1,8 @@
 import express from "express";
+import {v2 as cloudinary} from "cloudinary";
 import dotenv from "dotenv";
-import authRouter from "./routes/auth.route.js";
+import authRouter from "./routes/auth.routes.js";
+import userRouter from "./routes/user.routes.js";
 import connectMongoDB from "./db/connectMongoDB.js";
 import cookieParser from "cookie-parser";
 const app = express();
@@ -9,6 +11,11 @@ app.use(express.json());
 app.use(cookieParser());
 const PORT = process.env.PORT || 5000;
 dotenv.config();
+cloudinary.config({
+    cloud_name: process.env.CLOUD_NAME,
+    api_key: process.env.CLOUD_API_KEY,
+    api_secret: process.env.CLOUD_API_SECRET
+})
 
 app.get('/',(req,res)=>{
     res.json({
@@ -17,6 +24,7 @@ app.get('/',(req,res)=>{
 })
 
 app.use("/api/auth",authRouter);
+app.use("/api/users",userRouter)
 app.listen(PORT, (err) => {
     if(err){
         console.log("Error in Server", err.message);
