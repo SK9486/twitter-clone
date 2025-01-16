@@ -1,36 +1,65 @@
 import { Link } from "react-router-dom";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
-
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { IoSettingsOutline } from "react-icons/io5";
 import { FaUser } from "react-icons/fa";
 import { FaHeart } from "react-icons/fa6";
+import { toast } from "react-hot-toast";
+import { useState } from "react";
+
 
 const NotificationPage = () => {
-	const isLoading = false;
-	const notifications = [
-		{
-			_id: "1",
-			from: {
-				_id: "1",
-				username: "johndoe",
-				profileImg: "/avatars/boy2.png",
-			},
-			type: "follow",
+	const queryClient = useQueryClient();
+	const {data, isLoading} = useQuery({
+		queryKey: ["notifications"],
+		queryFn: async () => {
+			try {
+				const res = await fetch("/api/notifications/", {
+					method: "GET",
+				});
+				if (!res.ok) {
+					throw new Error("Failed to fetch notifications");
+				}
+				const data = await res.json();
+				return data;
+			} catch (error) {
+				console.log("Error fetching notifications", error.message);
+			}
 		},
-		{
-			_id: "2",
-			from: {
-				_id: "2",
-				username: "janedoe",
-				profileImg: "/avatars/girl1.png",
-			},
-			type: "like",
+	});
+
+	const { mutate: deleteNotification, isPending } = useMutation({
+		mutationFn: async () => {
+			try {
+				const res = await fetch(`/api/notifications/`, {
+					method: "DELETE",
+				});
+				if (!res.ok) {
+					throw new Error("Failed to delete notification");
+				}
+				const data = await res.json();
+				return data;
+			} catch (err) {
+				throw new Error(err.message);
+			}
 		},
-	];
+		onSuccess: () => {
+			toast.success("Notification deleted successfully");
+			queryClient.invalidateQueries({ queryKey: ["notifications"] });
+		},
+		onError: (error) => {
+			toast.error(error.message || "Failed to delete notification");
+		}
+	});
 
 	const deleteNotifications = () => {
-		alert("All notifications deleted");
+		document.getElementById('my_modal_4').showModal();
 	};
+
+	const handleDelete = () => {
+		deleteNotification();
+		document.getElementById('my_modal_4').close(); // Close the modal after deletion
+	}
 
 	return (
 		<>
@@ -56,8 +85,8 @@ const NotificationPage = () => {
 						<LoadingSpinner size='lg' />
 					</div>
 				)}
-				{notifications?.length === 0 && <div className='text-center p-4 font-bold'>No notifications 🤔</div>}
-				{notifications?.map((notification) => (
+				{data?.length === 0 && <div className='text-center p-4 font-bold'>No notifications 🤔</div>}
+				{data?.map((notification) => (
 					<div className='border-b border-gray-700' key={notification._id}>
 						<div className='flex gap-2 p-4'>
 							{notification.type === "follow" && <FaUser className='w-7 h-7 text-primary' />}
@@ -76,8 +105,23 @@ const NotificationPage = () => {
 						</div>
 					</div>
 				))}
+
+				<dialog id="my_modal_4" className="modal">
+					<div className="modal-box w-4/12 max-w-5xl border border-gray-700">
+						<h3 className="font-bold text-lg">Are you sure ❓</h3>
+						<p className="py-4">Delete all notifications</p>
+						<div className="modal-action">
+							<form method="dialog">
+								{/* if there is a button, it will close the modal */}
+								<button className="btn mr-10">Close</button>
+								<button className="btn btn-primary" onClick={handleDelete}>Delete</button>
+							</form>
+						</div>
+					</div>
+				</dialog>
 			</div>
 		</>
 	);
 };
+
 export default NotificationPage;
