@@ -8,11 +8,17 @@ import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import LoadingSpinner from "./LoadingSpinner";
+import { formatPostDate } from "../../../../backend/lib/date/functions";
 
 const Post = ({ post }) => {
   const [comment, setComment] = useState("");
   const { data: authUser } = useQuery({ queryKey: ["authUser"] });
   const queryClient = useQueryClient();
+  const postOwner = post.user;
+  const isLiked = post.likes.includes(authUser._id);
+  const isMyPost = authUser._id === postOwner._id;
+  const formattedDate = formatPostDate(post.createdAt);
+
 
   // Mutation for deleting a post
   const { mutate: deletePost, isPending: isDeleting } = useMutation({
@@ -66,17 +72,47 @@ const Post = ({ post }) => {
     },
   });
 
-  const postOwner = post.user;
-  const isLiked = post.likes.includes(authUser._id);
-  const isMyPost = authUser._id === postOwner._id;
-  const formattedDate = "1h";
-  const isCommenting = false;
+  const { mutate: commentPost, isPending: isCommenting } = useMutation({
+    mutationFn: async (comment) => {
+      try {
+        const res = await fetch(`/api/posts/comment/${post._id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: comment }),
+        });
+        if (!res.ok) {
+          throw new Error("Failed to comment on post");
+        }
+        const data = await res.json();
+        return data;
+      } catch (error) {
+        throw new Error(error.message);
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+    onSuccess: (data) => {
+      toast.success("Commented on post");
+      setComment("");
+      queryClient.setQueryData(["posts"], (oldPosts) => {
+        return oldPosts.map((p) => {
+          if (p._id === post._id) {
+            return { ...p, comments: data };
+          }
+          return p;
+        });
+      });
+    },
+  });
+  
 
   // Event Handlers
   const handleDeletePost = () => deletePost();
 
   const handlePostComment = (e) => {
     e.preventDefault();
+    commentPost(comment);
     // Handle comment posting logic here
   };
 
@@ -151,8 +187,8 @@ const Post = ({ post }) => {
                         </div>
                         <div className="flex flex-col">
                           <div className="flex items-center gap-1">
-                            <span className="font-bold">{comment.user.fullName}</span>
-                            <span className="text-gray-700 text-sm">@{comment.user.username}</span>
+                            <span className="font-bold">{comment.user.fullName || " "}</span>
+                            <span className="text-gray-700 text-sm">@{comment.user.username || " "}</span>
                           </div>
                           <div className="text-sm">{comment.text}</div>
                         </div>
