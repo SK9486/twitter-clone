@@ -11,8 +11,11 @@ import { FaArrowLeft } from "react-icons/fa6";
 import { IoCalendarOutline } from "react-icons/io5";
 import { FaLink } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMemberSinceDate } from "../../../../backend/lib/date/functions";
+import useFollow from "../../hooks/useFollow";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import toast from "react-hot-toast";
 
 const ProfilePage = () => {
 	const [coverImg, setCoverImg] = useState(null);
@@ -20,9 +23,11 @@ const ProfilePage = () => {
 	const [feedType, setFeedType] = useState("posts");
 	const coverImgRef = useRef(null);
 	const profileImgRef = useRef(null);
-
-	const isMyProfile = true;
+	const {data:authUser} = useQuery({queryKey:["authUser"]});
 	const {username} = useParams();
+	const queryClient = useQueryClient();
+
+	const {follow,isPending} = useFollow();
 
 	const{data:user,isLoading,isRefetching,refetch}=useQuery({
 		queryKey: ["userProfile"],
@@ -41,6 +46,8 @@ const ProfilePage = () => {
 			}
 		}
 	});
+	const amIFollowing = authUser?.following?.includes(user?._id);
+	const isMyProfile = user?._id === authUser?._id;
 	const  MemberSinceYear = formatMemberSinceDate(user?.createdAt);
 	const handleImgChange = (e, state) => {
 		const file = e.target.files[0];
@@ -55,7 +62,38 @@ const ProfilePage = () => {
 	};
 	useEffect(() => {
 		refetch();
-	},[username,refetch]);
+	},[username,refetch,username]);
+
+		const { mutateAsync: updateProfile, isPending: isUpdatingProfile } = useMutation({
+			mutationFn: async (formData) => {
+				try {
+					const res = await fetch(`/api/users/update`, {
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify(formData),
+					});
+					const data = await res.json();
+					if (!res.ok) {
+						throw new Error(data.message || "Something went wrong");
+					}
+					return data;
+				} catch (error) {
+					throw new Error(error.message);
+				}
+			},
+			onSuccess: () => {
+				toast.success("Profile updated successfully");
+				Promise.all([
+					queryClient.invalidateQueries({ queryKey: ["authUser"] }),
+					queryClient.invalidateQueries({ queryKey: ["userProfile"] }),
+				]);
+			},
+			onError: (error) => {
+				toast.error(error.message);
+			},
+		});
 
 	return (
 		<>
@@ -125,17 +163,22 @@ const ProfilePage = () => {
 								{!isMyProfile && (
 									<button
 										className='btn btn-outline rounded-full btn-sm'
-										onClick={() => alert("Followed successfully")}
+										onClick={() => follow(user?._id)}
 									>
-										Follow
+										{isPending && <LoadingSpinner/>}
+										{!isPending && amIFollowing && "Unfollow"}
+										{!isPending && !amIFollowing && "Follow"}
 									</button>
 								)}
 								{(coverImg || profileImg) && (
 									<button
 										className='btn btn-primary rounded-full btn-sm text-white px-4 ml-2'
-										onClick={() => alert("Profile updated successfully")}
+										onClick={async() => {
+											await updateProfile({ coverImg, profileImg })
+											setCoverImg(null);
+											setProfileImg(null);}}
 									>
-										Update
+										{isUpdatingProfile ? <LoadingSpinner/> : "Update"}
 									</button>
 								)}
 							</div>
@@ -153,12 +196,12 @@ const ProfilePage = () => {
 											<>
 												<FaLink className='w-3 h-3 text-slate-500' />
 												<a
-													href='https://youtube.com/@asaprogrammer_'
+													href={user?.link}
 													target='_blank'
 													rel='noreferrer'
 													className='text-sm text-blue-500 hover:underline'
 												>
-													youtube.com/@skCreations
+													{user?.link || "@SKCreations"}
 												</a>
 											</>
 										</div>

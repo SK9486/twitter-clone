@@ -46,6 +46,7 @@ const NotificationPage = () => {
 		onSuccess: () => {
 			toast.success("Notification deleted successfully");
 			queryClient.invalidateQueries({ queryKey: ["notifications"] });
+			
 		},
 		onError: (error) => {
 			toast.error(error.message || "Failed to delete notification");
