@@ -8,7 +8,7 @@ import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import LoadingSpinner from "./LoadingSpinner";
-import { formatPostDate } from "../../../../backend/lib/date/functions";
+import { formatPostDate } from "../../utils/date/functions";
 
 const Post = ({ post }) => {
   const [comment, setComment] = useState("");

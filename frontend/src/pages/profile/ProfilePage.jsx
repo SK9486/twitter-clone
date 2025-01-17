@@ -12,7 +12,7 @@ import { IoCalendarOutline } from "react-icons/io5";
 import { FaLink } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import { formatMemberSinceDate } from "../../../../backend/lib/date/functions";
+import { formatMemberSinceDate } from "../../utils/date/functions";
 import useFollow from "../../hooks/useFollow";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import toast from "react-hot-toast";
