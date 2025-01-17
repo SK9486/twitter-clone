@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import {v2 as cloudinary} from "cloudinary";
 import User from "../models/user.model.js";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import Notification from "../models/notification.model.js";
 
 export const getUserProfile = async (req,res) => {
